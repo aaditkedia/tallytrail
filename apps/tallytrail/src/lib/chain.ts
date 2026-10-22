@@ -55,6 +55,21 @@ function explorerUrl(signature: string): string {
   return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
 }
 
+// anchor.Wallet (NodeWallet) is not exported from Anchor's bundled/browser entry, so build the wallet inline.
+function keypairWallet(kp: import("@solana/web3.js").Keypair) {
+  type Tx = import("@solana/web3.js").Transaction | import("@solana/web3.js").VersionedTransaction;
+  const sign = <T extends Tx>(tx: T): T => {
+    if ("version" in tx) tx.sign([kp]); else tx.partialSign(kp);
+    return tx;
+  };
+  return {
+    publicKey: kp.publicKey,
+    payer: kp,
+    signTransaction: async <T extends Tx>(tx: T) => sign(tx),
+    signAllTransactions: async <T extends Tx>(txs: T[]) => txs.map(sign),
+  };
+}
+
 async function liveProgram() {
   const anchor = await import("@coral-xyz/anchor");
   const { Connection, Keypair, PublicKey, clusterApiUrl } = await import("@solana/web3.js");
@@ -62,7 +77,7 @@ async function liveProgram() {
   const programId = new PublicKey(process.env.SOLANA_PROGRAM_ID!);
   const connection = new Connection(process.env.SOLANA_RPC_URL || clusterApiUrl("devnet"), "confirmed");
   const wallet = Keypair.fromSecretKey(loadWalletKeypair());
-  const provider = new anchor.AnchorProvider(connection, new anchor.Wallet(wallet), { commitment: "confirmed" });
+  const provider = new anchor.AnchorProvider(connection, keypairWallet(wallet), { commitment: "confirmed" });
   const program = new anchor.Program({ ...idl, address: programId.toBase58() }, provider);
   return { anchor, connection, wallet, program, PublicKey, web3: anchor.web3 };
 }
