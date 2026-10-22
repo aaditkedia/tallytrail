@@ -5,8 +5,8 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await assertOwner(request);
-    const { meta, bytes } = await loadEvidence((await context.params).id);
+    const ownerId = await assertOwner(request);
+    const { meta, bytes } = await loadEvidence((await context.params).id, undefined, ownerId);
     return new Response(bytes, {
       status: 200,
       headers: {
@@ -20,8 +20,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await assertOwner(request, true);
-    await deleteEvidence((await context.params).id);
+    const ownerId = await assertOwner(request, true);
+    await deleteEvidence((await context.params).id, undefined, ownerId);
     return Response.json({ deleted: true });
   } catch (error) { return failure(error); }
 }

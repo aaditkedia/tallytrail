@@ -34,7 +34,11 @@ async function evidenceIds(folder: string) {
   try { return [...new Set((await readdir(folder)).map(name => /^(.*)\.(bin|json)$/.exec(name)?.[1]).filter((id): id is string => Boolean(id && z.uuid().safeParse(id).success)))]; }
   catch (error) { if (isMissing(error)) return []; throw error; }
 }
-export async function listEvidence(directory = dataDirectory()): Promise<EvidenceEntry[]> {
+export async function listEvidence(directory = dataDirectory(), ownerId?: string): Promise<EvidenceEntry[]> {
+  if (!usesJsonStorage(directory) && ownerId) {
+    const { listHostedEvidence } = await import("./evidence-blob");
+    return listHostedEvidence(ownerId);
+  }
   const folder = await evidenceFolder(directory);
   const entries = await Promise.all((await evidenceIds(folder)).map(async id => {
     let metadata: EvidenceMetadata | null = null;
@@ -51,13 +55,17 @@ function sniff(bytes: Buffer, mime: BillMime) {
     : mime === "image/jpeg" ? bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
     : bytes.subarray(0, 4).toString() === "RIFF" && bytes.subarray(8, 12).toString() === "WEBP";
 }
-export async function storeEvidence(bytes: Buffer, rawMime: string, directory = dataDirectory()): Promise<EvidenceMetadata> {
+export async function storeEvidence(bytes: Buffer, rawMime: string, directory = dataDirectory(), ownerId?: string): Promise<EvidenceMetadata> {
   const mime = billMimeSchema.parse(rawMime);
   if (!bytes.length || bytes.length > MAX_BILL_BYTES) throw new DomainError("Select one nonempty bill up to 4 MiB.", 413);
   if (!sniff(bytes, mime)) throw new DomainError("File contents do not match its declared supported type.", 400);
+  const meta: EvidenceMetadata = { id: randomUUID(), sha256: sha256Bytes(bytes), mime, bytes: bytes.length, storedAt: new Date().toISOString() };
+  if (!usesJsonStorage(directory) && ownerId) {
+    const { storeHostedEvidence } = await import("./evidence-blob");
+    return storeHostedEvidence(ownerId, meta, bytes);
+  }
   const folder = await evidenceFolder(directory, true);
   if ((await evidenceIds(folder)).length >= MAX_PRIVATE_BILLS) throw new DomainError("Private bill limit reached (100). Delete files you no longer need before uploading another.", 429);
-  const meta: EvidenceMetadata = { id: randomUUID(), sha256: sha256Bytes(bytes), mime, bytes: bytes.length, storedAt: new Date().toISOString() };
   // User filenames are deliberately never used in paths or response headers.
   await writeFile(path.join(folder, `${meta.id}.bin`), bytes, { mode: 0o600, flag: "wx" });
   try { await writeFile(path.join(folder, `${meta.id}.json`), JSON.stringify(meta), { mode: 0o600, flag: "wx" }); }
@@ -65,8 +73,12 @@ export async function storeEvidence(bytes: Buffer, rawMime: string, directory = 
   return meta;
 }
 const sha256Bytes = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
-export async function loadEvidence(id: string, directory = dataDirectory()) {
+export async function loadEvidence(id: string, directory = dataDirectory(), ownerId?: string) {
   if (!z.uuid().safeParse(id).success) throw new DomainError("Evidence not found", 404);
+  if (!usesJsonStorage(directory) && ownerId) {
+    const { loadHostedEvidence } = await import("./evidence-blob");
+    return loadHostedEvidence(ownerId, id);
+  }
   const folder = await evidenceFolder(directory);
   try {
     const meta = metadataSchema.parse(JSON.parse(await readFile(path.join(folder, `${id}.json`), "utf8")));
@@ -78,8 +90,12 @@ export async function loadEvidence(id: string, directory = dataDirectory()) {
     return { meta, bytes };
   } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new DomainError("Evidence not found", 404); throw error; }
 }
-export async function deleteEvidence(id: string, directory = dataDirectory()) {
+export async function deleteEvidence(id: string, directory = dataDirectory(), ownerId?: string) {
   if (!z.uuid().safeParse(id).success) throw new DomainError("Evidence not found", 404);
+  if (!usesJsonStorage(directory) && ownerId) {
+    const { deleteHostedEvidence } = await import("./evidence-blob");
+    return deleteHostedEvidence(ownerId, id);
+  }
   const folder = await evidenceFolder(directory);
   if (!(await evidenceIds(folder)).includes(id)) throw new DomainError("Evidence not found", 404);
   // Deletion must work even when either file is missing or its hash is damaged.
@@ -106,7 +122,7 @@ export function evidenceStorageLabel(): string {
 
 export async function handleEvidenceUpload(request: Request, options: Options = {}) {
   try {
-    await assertOwner(request, true);
+    const ownerId = await assertOwner(request, true);
     const form = await boundedMultipart(request);
     if (form.get("storageConsent") !== "true") throw new DomainError("Explicit private storage consent is required.", 400);
     if (!usesJsonStorage(options.directory) && !process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
@@ -119,7 +135,7 @@ export async function handleEvidenceUpload(request: Request, options: Options = 
     const file = form.get("file");
     if (!(file instanceof File) || form.getAll("file").length !== 1) throw new DomainError("Select exactly one bill file", 400);
     const bytes = Buffer.from(await file.arrayBuffer());
-    const meta = await storeEvidence(bytes, file.type, options.directory);
+    const meta = await storeEvidence(bytes, file.type, options.directory, ownerId);
     if (!extractionConsent) return Response.json({ evidence: meta, extraction: null, message: "Stored privately on this machine. No provider was called; enter quantities manually." }, { status: 201 });
     // The provider receives only the selected file, never filenames or local paths.
     try {
@@ -127,7 +143,7 @@ export async function handleEvidenceUpload(request: Request, options: Options = 
       const extraction = await extract({ bytes, mime: meta.mime, sha256: meta.sha256 }, region);
       return Response.json({ evidence: meta, extraction, message: "Extraction requires human review. No report was created or confirmed." }, { status: 201 });
     } catch (error) {
-      await deleteEvidence(meta.id, options.directory);
+      await deleteEvidence(meta.id, options.directory, ownerId);
       throw error;
     }
   } catch (error) { return failure(error); }

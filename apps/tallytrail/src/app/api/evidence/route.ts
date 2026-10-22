@@ -10,9 +10,9 @@ export async function POST(request: Request) { return handleEvidenceUpload(reque
 
 export async function GET(request: Request) {
   try {
-    await assertOwner(request);
+    const ownerId = await assertOwner(request);
     return Response.json({
-      evidence: await listEvidence(),
+      evidence: await listEvidence(undefined, ownerId),
       vision: providerReadiness().vision,
       storage: evidenceStorageLabel(),
       supportedTypes: ["application/pdf", "image/jpeg", "image/png", "image/webp"],
