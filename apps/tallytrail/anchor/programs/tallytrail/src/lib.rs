@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 // SOURCE-ONLY placeholder, generated from a public label, NOT a deployed program.
 // Generate your own program keypair and run `anchor keys sync` before local testing.
-declare_id!("EkxBFKArDyC7opXhFEFZc6knzvv6mkeDUNkGPGHWD4By");
+declare_id!("4b35SugQVVCCFhAZTGGHtbxkvNrJWHkjQcAd1LPfwEz3");
 
 #[program]
 pub mod tallytrail {
