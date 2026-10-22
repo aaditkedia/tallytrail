@@ -1,0 +1,60 @@
+{
+  "name": "tallytrail",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @hackathon/tallytrail",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "node scripts/test.mjs",
+    "check": "npm run typecheck && npm test",
+    "doctor": "node scripts/doctor.mjs",
+    "setup:integrations": "node scripts/install-integrations.mjs",
+    "setup:native": "python3 scripts/install-native.py",
+    "build:contract": "python3 scripts/build-contract.py",
+    "test:contract": "python3 scripts/test-contract.py",
+    "smoke": "python3 scripts/smoke-local.py",
+    "browser:check": "node scripts/browser-local.mjs",
+    "db:generate": "drizzle-kit generate --config apps/tallytrail/drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config apps/tallytrail/drizzle.config.ts"
+  },
+  "overrides": {
+    "@coral-xyz/anchor": {
+      "toml": "4.2.0"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "drizzle-kit": "0.31.11",
+    "playwright-core": "1.61.1",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.32.1",
+    "@neondatabase/auth": "0.6.0-beta",
+    "@neondatabase/serverless": "1.1.0",
+    "@solana/web3.js": "1.99.0",
+    "@upstash/ratelimit": "2.2.0",
+    "@upstash/redis": "1.39.0",
+    "@vercel/blob": "2.8.0",
+    "drizzle-orm": "0.45.4",
+    "json-bigint": "1.0.0",
+    "lucide-react": "0.577.0",
+    "next": "16.3.8",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "stripe": "22.5.0",
+    "zod": "4.3.6"
+  }
+}

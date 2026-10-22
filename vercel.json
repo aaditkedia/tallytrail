@@ -1,0 +1,7 @@
+{
+  "buildCommand": "npm run build --workspace @hackathon/tallytrail",
+  "devCommand": "npm run dev --workspace @hackathon/tallytrail",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": "apps/tallytrail/.next"
+}

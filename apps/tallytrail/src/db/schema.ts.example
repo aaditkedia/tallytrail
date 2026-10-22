@@ -1,0 +1,14 @@
+// Optional migration design, not the active local repository.
+import { pgTable, uuid, text, timestamp, jsonb, numeric, uniqueIndex, integer } from "drizzle-orm/pg-core";
+export const businesses = pgTable("businesses", { id: uuid().defaultRandom().primaryKey(), ownerId: text("owner_id").notNull(), name: text().notNull() });
+export const reports = pgTable("reports", {
+  id: uuid().defaultRandom().primaryKey(), businessId: uuid("business_id").references(() => businesses.id).notNull(),
+  period: text().notNull(), evidenceHash: text("evidence_hash").notNull(), payload: jsonb().notNull(),
+  totalKg: numeric("total_kg", { precision: 20, scale: 8 }).notNull(), status: text().notNull(), confirmedAt: timestamp("confirmed_at"),
+}, t => [uniqueIndex("reports_business_period").on(t.businessId, t.period)]);
+export const offsetRetirements = pgTable("offset_retirements", {
+  id: uuid().defaultRandom().primaryKey(), registryKey: text("registry_key").notNull(), serialKey: text("serial_key").notNull(),
+  gramsCo2e: numeric("grams_co2e", { precision: 24, scale: 0 }).notNull(), beneficiary: text().notNull(),
+}, t => [uniqueIndex("retirements_unique_credit").on(t.registryKey, t.serialKey)]);
+export const agentRuns = pgTable("agent_runs", { id: uuid().defaultRandom().primaryKey(), reportId: uuid("report_id").references(() => reports.id), status: text().notNull() });
+export const agentSteps = pgTable("agent_steps", { id: uuid().defaultRandom().primaryKey(), runId: uuid("run_id").references(() => agentRuns.id).notNull(), seq: integer().notNull(), name: text().notNull(), output: jsonb() }, t => [uniqueIndex("steps_run_seq").on(t.runId, t.seq)]);

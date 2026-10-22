@@ -38,3 +38,9 @@ test-ledger/
 # Misc
 *.tsbuildinfo
 .turbo/
+.data/
+.toolchains/
+apps/tallytrail/.data/
+
+# Env examples are tracked
+apps/tallytrail/.env.local

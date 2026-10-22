@@ -1,0 +1,8 @@
+import type { ReportInput } from "./domain";
+export const SAMPLE_REPORT: ReportInput = {
+  business: "Juniper Bakery (synthetic)", periodStart: "2026-09-01", periodEnd: "2026-09-30",
+  region: "RFCE", inputMode: "synthetic", lineItems: [
+    { label: "Bakery electricity · sample bill", kind: "electricity", amount: 2400, unit: "kWh" },
+    { label: "Oven natural gas · sample bill", kind: "natural_gas", amount: 185, unit: "therm" },
+  ],
+};
