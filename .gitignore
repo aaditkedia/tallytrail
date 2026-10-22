@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+target/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and debug
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test and coverage
+coverage/
+.nyc_output/
+
+# Solana / Anchor (for upcoming import)
+.anchor/
+test-ledger/
+
+# Vercel
+.vercel
+
+# Misc
+*.tsbuildinfo
+.turbo/
