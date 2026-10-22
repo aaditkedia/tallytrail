@@ -1,4 +1,5 @@
 "use client";
+import { KHero } from "./_khero/KHero";
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronRight, CircleHelp, ClipboardCheck, ExternalLink, FileCheck2, FileText, Fingerprint, Flame, LayoutDashboard, Leaf, LoaderCircle, Plus, ScanLine, ShieldCheck, Sparkles, Sprout, Upload, X, Zap } from "lucide-react";
@@ -24,7 +25,7 @@ function download(name: string, value: unknown) {
   const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
 }
 
-export default function Home() {
+function HomeApp() {
   const [tab, setTab] = useState("Overview");
   const [reports, setReports] = useState<Report[]>([]);
   const [offsets, setOffsets] = useState<Offset[]>([]);
@@ -214,4 +215,8 @@ function Methodology() {
     { title: "Evidence integrity & privacy", icon: <Fingerprint size={24} />, body: "The report hash covers canonical JSON with reviewed fields, calculation and optional original-file fingerprint. Fingerprint-only mode keeps files in the browser. Optional uploads store a private local copy; Gemini receives contents only with server enablement and explicit per-file consent. A hash proves consistency, not truth.", link: null, label: null },
     { title: "Readiness & limits", icon: <ShieldCheck size={24} />, body: "Review steps are deterministic functions (not LLM agents). Optional Gemini bill extraction runs only when TALLYTRAIL_GEMINI_ENABLED=true and you consent per file. Hosted mode uses Neon Postgres, Neon Auth, and Vercel Blob via env vars. Solana devnet submit_report runs after confirmation for full calendar months when SOLANA_* wallet and program vars are set. This is a PoC, not certified carbon accounting.", link: null, label: null },
   ].map(card => <section className="tt-panel tt-method-card" key={card.title}><span className="tt-source-icon">{card.icon}</span><h2>{card.title}</h2><p>{card.body}</p>{card.link && <a href={card.link} target="_blank" rel="noreferrer">{card.label} <ExternalLink size={13} /></a>}</section>)}</div>;
+}
+
+export default function Home() {
+  return <><KHero name={"TallyTrail"} tag={"Ledger"} eyebrow={"Carbon accounting \u00b7 with a paper trail"} body={"Turn everyday energy bills into emissions you can understand, review, and verify \u2014 every number tied to its source."} stat={"Every factor sourced \u00b7 Anchored on Solana devnet"} primary={"Try a sample report"} secondary={"Open the workspace"} accent={"#3f9a62"} features={["Bill import", "Sourced emission factors", "Scope 1 & Scope 2", "Bill fingerprints", "Human review gate", "Solana devnet receipts", "Offset ledger", "Public verify links"]} image={"/hero.webp"} /><div id="app">{<HomeApp />}</div></>;
 }
