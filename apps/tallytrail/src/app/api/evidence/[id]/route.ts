@@ -7,7 +7,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   try {
     const ownerId = await assertOwner(request);
     const { meta, bytes } = await loadEvidence((await context.params).id, undefined, ownerId);
-    return new Response(bytes, {
+    return new Response(new Uint8Array(bytes), {
       status: 200,
       headers: {
         "Content-Type": meta.mime,
