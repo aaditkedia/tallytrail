@@ -44,3 +44,4 @@ apps/tallytrail/.data/
 
 # Env examples are tracked
 apps/tallytrail/.env.local
+.env*
