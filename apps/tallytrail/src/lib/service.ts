@@ -4,7 +4,7 @@ import { z } from "zod";
 import { audit, calculate, canonicalJson, hashPayload, offsetKey, offsetSchema, reportInputSchema, sha256 } from "./domain";
 import type { Report } from "./domain";
 import { retireOffsetOnChain, submitReportOnChain } from "./chain";
-import { mutateAppState, readAppState } from "./storage";
+import { mutateAppState, readAppState, usesJsonStorage } from "./storage";
 
 import { DomainError } from "./errors";
 export { DomainError } from "./errors";
@@ -96,7 +96,12 @@ export async function discardDraft(id: string, directory?: string, ownerId = "lo
 }
 
 export async function publicVerification(id: string, directory?: string, ownerId = "local") {
-  const report = (await readAppState(directory, ownerId)).reports.find(r => r.id === id.trim().toUpperCase() && r.status === "confirmed");
+  const wanted = id.trim().toUpperCase();
+  let report = (await readAppState(directory, ownerId)).reports.find(r => r.id === wanted && r.status === "confirmed");
+  if (!report && !usesJsonStorage(directory)) {
+    const { findConfirmedReportPg } = await import("./repository-pg");
+    report = await findConfirmedReportPg(wanted);
+  }
   if (!report) throw new DomainError("Confirmed report not found", 404);
   const recomputed = sha256(canonicalJson(hashPayload(report)));
   return {

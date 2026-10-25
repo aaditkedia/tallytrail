@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { State } from "./store";
 import { getDb, schema } from "@/db";
 import { DomainError } from "./service";
@@ -29,4 +29,13 @@ export async function mutatePgState<T>(operation: (state: State) => T | Promise<
     set: { reports: existing.reports, offsets: existing.offsets, updatedAt: new Date(), version: 1 },
   });
   return result;
+}
+
+/** Public verification: find a confirmed report by id across all owners (ids are random). */
+export async function findConfirmedReportPg(id: string): Promise<State["reports"][number] | undefined> {
+  const db = getDb();
+  const needle = JSON.stringify([{ id, status: "confirmed" }]);
+  const rows = await db.select().from(schema.appState).where(sql`${schema.appState.reports} @> ${needle}::jsonb`).limit(1);
+  const reports = (rows[0]?.reports ?? []) as State["reports"];
+  return reports.find(r => r.id === id && r.status === "confirmed");
 }
